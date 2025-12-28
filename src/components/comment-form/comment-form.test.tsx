@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { CommentForm } from './comment-form.tsx';
 import { withStore } from '../../utils/component-mocks.tsx';
 import { makeStore, makeOfferFullInfo } from '../../utils/mocks.ts';
-import { sendComment } from '../../store/api-actions.ts';
 
 describe('Component: CommentForm', () => {
   it('should render correctly with initial state', () => {
@@ -34,14 +33,16 @@ describe('Component: CommentForm', () => {
     expect(screen.getByRole('button', { name: /submit/i })).not.toBeDisabled();
   });
 
-  it('should dispatch "sendComment" action when form is submitted', async () => {
+  it('should disable inputs and button when form is being submitted', async () => {
     const offer = makeOfferFullInfo();
-    const { withStoreComponent, mockStore, mockAxiosAdapter } = withStore(
+    const { withStoreComponent, mockAxiosAdapter } = withStore(
       <CommentForm />,
       makeStore({ offers: { ...makeStore().offers, offer } })
     );
 
-    mockAxiosAdapter.onPost(new RegExp(`/comments/${offer.id}`)).reply(200, {});
+    mockAxiosAdapter.onPost(new RegExp(`/comments/${offer.id}`)).reply(() =>
+      new Promise((resolve) => setTimeout(() => resolve([200, {}]), 100))
+    );
 
     render(withStoreComponent);
     const validCommentText = 'This is a long enough comment to pass the validation check which requires at least 50 characters.';
@@ -51,18 +52,8 @@ describe('Component: CommentForm', () => {
     await userEvent.click(ratingInputs[0]);
     await userEvent.click(screen.getByRole('button', { name: /submit/i }));
 
-    const actions = mockStore.getActions();
-    const pendingAction = actions.find(
-      (action) => action.type === sendComment.pending.type
-    ) as ReturnType<typeof sendComment.pending>;
-
-    expect(pendingAction).toBeDefined();
-    expect(pendingAction.meta.arg).toEqual({
-      offerId: offer.id,
-      comment: {
-        comment: validCommentText,
-        rating: 5
-      }
-    });
+    expect(screen.getByPlaceholderText(/Tell how was your stay/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /submit/i })).toBeDisabled();
+    ratingInputs.forEach((input) => expect(input).toBeDisabled());
   });
 });

@@ -4,15 +4,15 @@ import { HotelType } from '../enums/hotel-type.ts';
 import { Good } from '../enums/good.ts';
 import { AuthStatus } from '../enums/auth-status.ts';
 import { SortingType } from '../enums/sorting-type.ts';
+import { CITIES } from '../const.ts';
+import type { UserInfo } from '../types/user-info.ts';
 import type { Location } from '../types/location.ts';
 import type { City } from '../types/city.ts';
 import type { Comment } from '../types/comment.ts';
-import type { RatingScore } from '../types/rating-score.ts';
 import type { OfferPreviewInfo } from '../types/offer-preview-info.ts';
 import type { OfferFullInfo } from '../types/offer-full-info.ts';
 import type { State } from '../types/state.ts';
 import type { OffersState } from '../store/offers/offers-slice.ts';
-import { UserInfo } from '../types/user-info.ts';
 
 export const makeComment = (initial?: Partial<Comment>): Comment => ({
   id: datatype.uuid(),
@@ -23,7 +23,7 @@ export const makeComment = (initial?: Partial<Comment>): Comment => ({
   },
   date: datatype.datetime().toISOString(),
   comment: lorem.sentence(51),
-  rating: datatype.number({min: 1, max: 5}) as RatingScore,
+  rating: datatype.number({min: 1, max: 5}),
   ...initial
 });
 
@@ -48,7 +48,7 @@ export const makeOfferPreviewInfo = (initial?: Partial<OfferPreviewInfo>): Offer
   isPremium: datatype.boolean(),
   location: makeLocation(),
   price: +commerce.price(),
-  rating: datatype.number({min: 1, max: 5}) as RatingScore,
+  rating: datatype.number({min: 1, max: 5}),
   title: `${company.companyName()}'s hotel`,
   type: random.arrayElement(Object.values(HotelType)),
   ...initial
@@ -56,8 +56,8 @@ export const makeOfferPreviewInfo = (initial?: Partial<OfferPreviewInfo>): Offer
 
 export const makeOfferFullInfo = (initial?: Partial<OfferFullInfo>): OfferFullInfo => {
   const previewInfo = makeOfferPreviewInfo();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { previewImage: _, ...rest } = previewInfo;
+  const rest = { ...previewInfo };
+  delete (rest as Partial<OfferPreviewInfo>).previewImage;
   return ({
     bedrooms: datatype.number({min: 1, max: 3}),
     description: commerce.productDescription(),
@@ -110,8 +110,8 @@ export const makeStore = (initial?: Partial<State>): State => ({
     info: null
   },
   cities: {
-    city: null,
-    cities: []
+    city: CITIES[0],
+    cities: CITIES
   },
   offers: makeOffersState(),
   error: null,

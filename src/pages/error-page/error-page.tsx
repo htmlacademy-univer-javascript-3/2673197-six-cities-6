@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 import { StatusCodes } from 'http-status-codes';
 
 import { useAppSelector } from '../../hooks/use-app-selector.ts';
-import type { ServerError } from '../../types/server-error.ts';
+import { getError } from '../../store/error/error-selectors.ts';
 
 type ErrorPageProps =
   | {
@@ -16,7 +16,7 @@ type ErrorPageProps =
     }
 
 export function ErrorPage({ statusCode, message }: ErrorPageProps): ReactNode {
-  const errorFromState = useAppSelector((state) => state.error) as ServerError | null;
+  const errorFromState = useAppSelector(getError);
 
   const currentStatus = statusCode ?? errorFromState?.status ?? StatusCodes.INTERNAL_SERVER_ERROR;
   const currentMessage = message ?? errorFromState?.message ?? 'Internal Server Error';

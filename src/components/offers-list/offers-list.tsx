@@ -6,18 +6,26 @@ import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 
 type OffersListProps = {
   offers: OfferPreviewInfo[];
-  onOfferCardHover: (hoveredOfferId: string) => void;
-  onOfferCardUnhover: () => void;
   onBookmarkClick: (offerId: string) => void;
+  onOfferCardHover?: (hoveredOfferId: string) => void;
+  onOfferCardUnhover?: () => void;
 }
 
 function OffersListComponent({offers, onOfferCardHover, onOfferCardUnhover, onBookmarkClick}: OffersListProps): ReactNode {
-  const handleCardUnhover = useCallback(() => onOfferCardUnhover(), [onOfferCardUnhover]);
+  const handleCardUnhover = useCallback(() => {
+    if (onOfferCardUnhover) {
+      onOfferCardUnhover();
+    }
+  }, [onOfferCardUnhover]);
 
   return (
     <>
       {offers.map((offer: OfferPreviewInfo) => {
-        const handleCardHover = () => onOfferCardHover(offer.id);
+        const handleCardHover = () => {
+          if (onOfferCardHover) {
+            onOfferCardHover(offer.id);
+          }
+        };
         return (
           <HotelCard
             key={offer.id}

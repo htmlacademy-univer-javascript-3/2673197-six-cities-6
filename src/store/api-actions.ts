@@ -6,7 +6,8 @@ import { StatusCodes } from 'http-status-codes';
 import { ActionNamespace } from '../enums/action-namespace.ts';
 import { ApiRoute } from '../enums/api-route.ts';
 import { FavoriteAction } from '../enums/favorite-action.ts';
-import { AUTH_TOKEN_KEY_NAME } from '../const.ts';
+import { ServerErrorType } from '../enums/server-error-type.ts';
+import { removeToken, saveToken } from '../services/token.ts';
 import type { AppDispatch } from '../types/app-dispatch.ts';
 import type { State } from '../types/state.ts';
 import type { OfferPreviewInfo } from '../types/offer-preview-info.ts';
@@ -33,11 +34,22 @@ type GetOfferResponse = {
   nearbyOffers: OfferPreviewInfo[];
 };
 
-export const getOffers = createAsyncThunk<OfferPreviewInfo[], undefined, ThunkApiConfig>(
+export const getOffers = createAsyncThunk<OfferPreviewInfo[], undefined, ThunkApiConfig & { rejectValue: ServerError }>(
   `${ActionNamespace.Offers}/getOffers`,
-  async (_arg, { extra: api }) => {
-    const response = await api.get<OfferPreviewInfo[]>(ApiRoute.Offers);
-    return response.data;
+  async (_arg, { extra: api, rejectWithValue }) => {
+    try {
+      const response = await api.get<OfferPreviewInfo[]>(ApiRoute.Offers);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        return rejectWithValue({
+          status: error.response?.status,
+          errorType: ServerErrorType.CommonError,
+          message: error.message
+        });
+      }
+      throw error;
+    }
   }
 );
 
@@ -127,7 +139,7 @@ export const login = createAsyncThunk<UserInfo, LoginPayload, ThunkApiConfig & {
   async ({ email, password }, { extra: api, rejectWithValue }) => {
     try {
       const response = await api.post<UserInfo>(ApiRoute.Login, { email, password });
-      localStorage.setItem(AUTH_TOKEN_KEY_NAME, response.data.token);
+      saveToken(response.data.token);
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === StatusCodes.BAD_REQUEST) {
@@ -135,5 +147,13 @@ export const login = createAsyncThunk<UserInfo, LoginPayload, ThunkApiConfig & {
       }
       throw error;
     }
+  }
+);
+
+export const logout = createAsyncThunk<void, void, ThunkApiConfig>(
+  `${ActionNamespace.User}/logout`,
+  async (_arg, { extra: api }) => {
+    await api.delete(ApiRoute.Logout);
+    removeToken();
   }
 );

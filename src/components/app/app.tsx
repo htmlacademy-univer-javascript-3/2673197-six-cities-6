@@ -14,19 +14,31 @@ import { useAppSelector } from '../../hooks/use-app-selector.ts';
 import { LoadingScreen } from '../loading-screen/loading-screen.tsx';
 import { getFavoriteOffers, getOffers } from '../../store/api-actions.ts';
 import { AuthStatus } from '../../enums/auth-status.ts';
+import { ServerErrorType } from '../../enums/server-error-type.ts';
+import { getAuthStatus } from '../../store/user/user-selectors.ts';
+import { isOffersLoading as getIsOffersLoading } from '../../store/offers/offers-selectors.ts';
+import { getError } from '../../store/error/error-selectors.ts';
 
 export function App(): ReactNode {
   const dispatch = useAppDispatch();
-  const authStatus = useAppSelector((state) => state.user.authStatus);
+  const authStatus = useAppSelector(getAuthStatus);
+  const error = useAppSelector(getError);
+  const isOffersLoading = useAppSelector(getIsOffersLoading);
+
   useEffect(() => {
     dispatch(getOffers());
   }, [dispatch]);
+
   useEffect(() => {
     if (authStatus === AuthStatus.Authorized) {
       dispatch(getFavoriteOffers());
     }
   }, [authStatus, dispatch]);
-  const isOffersLoading = useAppSelector((state) => state.offers.isOffersLoading);
+
+  if (error && error.errorType === ServerErrorType.CommonError) {
+    return <ErrorPage />;
+  }
+
   if (isOffersLoading) {
     return <LoadingScreen />;
   }

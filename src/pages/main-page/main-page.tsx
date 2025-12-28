@@ -1,5 +1,6 @@
 ﻿import { useNavigate } from 'react-router-dom';
 import { useCallback, useMemo, useState } from 'react';
+import classNames from 'classnames';
 import type { ReactNode } from 'react';
 
 import { CitiesList } from '../../components/cities-list/cities-list.tsx';
@@ -14,6 +15,9 @@ import { AuthStatus } from '../../enums/auth-status.ts';
 import { AppRoute } from '../../enums/app-route.ts';
 import { setFavoriteStatus } from '../../store/api-actions.ts';
 import { FavoriteAction } from '../../enums/favorite-action.ts';
+import { getOffersInCity } from '../../store/offers/offers-selectors.ts';
+import { getCities, getCity } from '../../store/cities/cities-selectors.ts';
+import { getAuthStatus } from '../../store/user/user-selectors.ts';
 import type { Point } from '../../types/point.ts';
 import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 import type { City } from '../../types/city.ts';
@@ -26,7 +30,7 @@ function mapOfferPreviewInfoToPoint(offer: OfferPreviewInfo): Point {
   });
 }
 
-function NoPlacesAvailable({ city }: { city: string | undefined }): ReactNode {
+function NoPlacesAvailable({ city }: { city: string }): ReactNode {
   return (
     <div className="cities">
       <div className="cities__places-container cities__places-container--empty container">
@@ -47,10 +51,10 @@ function NoPlacesAvailable({ city }: { city: string | undefined }): ReactNode {
 export function MainPage(): ReactNode {
   const dispatch = useAppDispatch();
 
-  const currentOffers = useAppSelector((state) => state.offers.offersInCity);
-  const currentCity = useAppSelector((state) => state.cities.city);
-  const cities = useAppSelector((state) => state.cities.cities);
-  const authStatus = useAppSelector((state) => state.user.authStatus);
+  const currentOffers = useAppSelector(getOffersInCity);
+  const currentCity = useAppSelector(getCity);
+  const cities = useAppSelector(getCities);
+  const authStatus = useAppSelector(getAuthStatus);
   const navigate = useNavigate();
 
   const [hoveredOfferId, setHoveredOfferId] = useState<string | null>(null);
@@ -85,22 +89,29 @@ export function MainPage(): ReactNode {
     setHoveredOfferId(null);
   }, []);
 
+  const isEmpty = currentOffers.length === 0;
+
   return (
     <div className="page page--gray page--main">
       <Header />
-      <main className="page__main page__main--index">
+      <main className={classNames(
+        'page__main',
+        'page__main--index',
+        { 'page__main--index-empty': isEmpty }
+      )}
+      >
         <h1 className="visually-hidden">Cities</h1>
         <div className="tabs">
           <CitiesList cities={cities} onCityClick={handleCityClick}/>
         </div>
-        {currentOffers.length === 0
-          ? <NoPlacesAvailable city={currentCity?.name}></NoPlacesAvailable>
+        {isEmpty
+          ? <NoPlacesAvailable city={currentCity.name}></NoPlacesAvailable>
           : (
             <div className="cities">
               <div className="cities__places-container container">
                 <section className="cities__places places">
                   <h2 className="visually-hidden">Places</h2>
-                  <b className="places__found">{currentOffers.length} places to stay in {currentCity?.name}</b>
+                  <b className="places__found">{currentOffers.length} places to stay in {currentCity.name}</b>
                   <SortingTypeMenu/>
                   <div className="cities__places-list places__list tabs__content">
                     <OffersList

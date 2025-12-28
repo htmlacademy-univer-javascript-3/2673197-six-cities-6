@@ -1,17 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { ActionNamespace } from '../../enums/action-namespace.ts';
-import { getOffers } from '../api-actions.ts';
+import { CITIES } from '../../const.ts';
 import type { City } from '../../types/city.ts';
 
 type CitiesState = {
-  city: City | null;
+  city: City;
   cities: City[];
 };
 
 const initialState: CitiesState = {
-  city: null,
-  cities: []
+  city: CITIES[0],
+  cities: CITIES
 };
 
 export const citiesSlice = createSlice({
@@ -21,19 +21,6 @@ export const citiesSlice = createSlice({
     switchCity(state, action: PayloadAction<City>) {
       state.city = action.payload;
     }
-  },
-  extraReducers(builder) {
-    builder.addCase(getOffers.fulfilled, (state, action) => {
-      const cities = action.payload
-        .map((o) => o.city)
-        .filter((city, index, self) =>
-          index === self.findIndex((c) => c.name === city.name)
-        );
-      state.cities = cities;
-      if (cities.length > 0) {
-        state.city = cities[0];
-      }
-    });
   }
 });
 

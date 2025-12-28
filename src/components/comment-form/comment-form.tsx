@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, ChangeEvent, FormEvent } from 'react';
 import type { ReactNode } from 'react';
 
 import { RatingStarsInput } from '../rating-stars-input/rating-stars-input.tsx';
@@ -7,11 +7,13 @@ import { useAppSelector } from '../../hooks/use-app-selector.ts';
 import { ServerErrorType } from '../../enums/server-error-type.ts';
 import { resetError } from '../../store/error/error-slice.ts';
 import { sendComment } from '../../store/api-actions.ts';
+import { getError } from '../../store/error/error-selectors.ts';
+import { getOffer } from '../../store/offers/offers-selectors.ts';
 import type { CommentContent } from '../../types/comment-content.ts';
-import type { ServerError } from '../../types/server-error.ts';
 import type { RatingScore } from '../../types/rating-score.ts';
 
 const MIN_COMMENT_LENGTH = 50;
+const MAX_COMMENT_LENGTH = 300;
 
 type CommentContentState = Omit<CommentContent, 'rating'> & {
   rating: RatingScore | null;
@@ -19,43 +21,59 @@ type CommentContentState = Omit<CommentContent, 'rating'> & {
 
 export function CommentForm(): ReactNode {
   const [comment, setComment] = useState<CommentContentState>({ rating: null, comment: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useAppDispatch();
-  const error = useAppSelector((state) => state.error) as ServerError | null;
-  const offerId = useAppSelector((state) => state.offers.offer?.id);
+  const error = useAppSelector(getError);
+  const offer = useAppSelector(getOffer);
+  const offerId = offer?.id;
 
   if (!offerId) {
     throw new Error('CommentForm can\'t be used without an offerId');
   }
+
+  const isFormValid =
+    comment.comment.length >= MIN_COMMENT_LENGTH &&
+    comment.comment.length <= MAX_COMMENT_LENGTH &&
+    comment.rating !== null;
+
+  const handleRatingChange = (score: RatingScore) => {
+    setComment({...comment, rating: score});
+    dispatch(resetError());
+  };
+  const handleCommentChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setComment({...comment, comment: e.target.value});
+    dispatch(resetError());
+  };
+  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    dispatch(sendComment({ comment: comment as CommentContent, offerId: offerId }))
+      .unwrap()
+      .then(() => setComment({ rating: null, comment: '' }))
+      .finally(() => setIsSubmitting(false));
+  };
 
   return (
     <form
       className="reviews__form form"
       action="#"
       method="post"
-      onSubmit={(e) => {
-        e.preventDefault();
-        dispatch(sendComment({ comment: comment as CommentContent, offerId: offerId }))
-          .unwrap()
-          .then(() => setComment({ rating: null, comment: '' }));
-      }}
+      onSubmit={handleFormSubmit}
     >
       <label className="reviews__label form__label" htmlFor="review">Your review</label>
       <RatingStarsInput
         value={comment.rating}
-        onChange={(score) => {
-          setComment({...comment, rating: score});
-          dispatch(resetError());
-        }}
+        disabled={isSubmitting}
+        onChange={handleRatingChange}
       />
-      <textarea className="reviews__textarea form__textarea"
+      <textarea
+        className="reviews__textarea form__textarea"
         id="review"
         name="review"
         placeholder="Tell how was your stay, what you like and what can be improved"
         value={comment.comment}
-        onChange={(e) => {
-          setComment({...comment, comment: e.target.value});
-          dispatch(resetError());
-        }}
+        disabled={isSubmitting}
+        onChange={handleCommentChange}
       >
       </textarea>
       <div className="reviews__button-wrapper">
@@ -66,7 +84,7 @@ export function CommentForm(): ReactNode {
         <button
           className="reviews__submit form__submit button"
           type="submit"
-          disabled={comment.comment.length < MIN_COMMENT_LENGTH || !comment.rating}
+          disabled={!isFormValid || isSubmitting}
         >
           Submit
         </button>

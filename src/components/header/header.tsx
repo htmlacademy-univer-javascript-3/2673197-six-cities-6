@@ -1,16 +1,25 @@
 ﻿import { Link } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { MouseEvent, ReactNode } from 'react';
 
 import { useAppSelector } from '../../hooks/use-app-selector.ts';
+import { useAppDispatch } from '../../hooks/use-app-dispatch.ts';
 import { AuthStatus } from '../../enums/auth-status.ts';
 import { AppRoute } from '../../enums/app-route.ts';
+import { logout } from '../../store/api-actions.ts';
+import { getAuthStatus, getUserInfo } from '../../store/user/user-selectors.ts';
+import { getFavoriteOffers } from '../../store/offers/offers-selectors.ts';
 
 function NavigationItems(): ReactNode {
-  const user = useAppSelector((state) => state.user);
-  const favoriteOffers = useAppSelector((state) => state.offers.favoriteOffers);
-
+  const authStatus = useAppSelector(getAuthStatus);
+  const userInfo = useAppSelector(getUserInfo);
+  const favoriteOffers = useAppSelector(getFavoriteOffers);
+  const dispatch = useAppDispatch();
+  const handleLogoutClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    dispatch(logout());
+  };
   let navItems: ReactNode;
-  switch (user.authStatus) {
+  switch (authStatus) {
     case AuthStatus.Authorized:
       navItems = (
         <>
@@ -21,13 +30,17 @@ function NavigationItems(): ReactNode {
             >
               <div className="header__avatar-wrapper user__avatar-wrapper"></div>
               <span className="header__user-name user__name">
-                {user.info.email}
+                {userInfo?.email}
               </span>
               <span className="header__favorite-count">{favoriteOffers.length}</span>
             </Link>
           </li>
           <li className="header__nav-item">
-            <a className="header__nav-link" href="#">
+            <a
+              className="header__nav-link"
+              href="#"
+              onClick={handleLogoutClick}
+            >
               <span className="header__signout">Sign out</span>
             </a>
           </li>
@@ -48,10 +61,7 @@ function NavigationItems(): ReactNode {
       );
       break;
     default:
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      type _ = never;
+      navItems = null;
       break;
   }
 

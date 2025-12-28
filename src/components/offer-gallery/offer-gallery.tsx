@@ -6,11 +6,13 @@ type OfferGalleryProps = {
   images: Url[];
 }
 
+const MAX_IMAGES_COUNT = 6;
+
 export function OfferGallery({ images }: OfferGalleryProps): ReactNode {
   return (
     <div className="offer__gallery-container container">
       <div className="offer__gallery">
-        {images.map((url) => (
+        {images.slice(0, MAX_IMAGES_COUNT).map((url) => (
           <div key={url} className="offer__image-wrapper">
             <img
               className="offer__image"
@@ -23,3 +25,4 @@ export function OfferGallery({ images }: OfferGalleryProps): ReactNode {
     </div>
   );
 }
+

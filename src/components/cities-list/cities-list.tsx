@@ -3,6 +3,7 @@ import { memo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
 import { useAppSelector } from '../../hooks/use-app-selector.ts';
+import { getCity } from '../../store/cities/cities-selectors.ts';
 import type { City } from '../../types/city.ts';
 
 type CitiesListProps = {
@@ -10,8 +11,8 @@ type CitiesListProps = {
   onCityClick: (city: City) => void;
 }
 
-function CitiesListComponent({cities, onCityClick}: CitiesListProps): ReactNode {
-  const currentCity = useAppSelector((state) => state.cities.city);
+function CitiesListComponent({ cities, onCityClick }: CitiesListProps): ReactNode {
+  const currentCity = useAppSelector(getCity);
   const handleCityClick = useCallback((city: City) => onCityClick(city), [onCityClick]);
   return (
     <section className="locations container">

@@ -7,8 +7,9 @@ import { setFavoriteStatus } from '../../store/api-actions.ts';
 import { Header } from '../../components/header/header.tsx';
 import { useAppSelector } from '../../hooks/use-app-selector.ts';
 import { Footer } from '../../components/footer/footer.tsx';
-import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 import { FavoriteAction } from '../../enums/favorite-action.ts';
+import { getFavoriteOffers } from '../../store/offers/offers-selectors.ts';
+import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 
 function groupOffersByCityName(offers: OfferPreviewInfo[]): Record<string, OfferPreviewInfo[]> {
   return offers.reduce((acc, item) => {
@@ -20,7 +21,7 @@ function groupOffersByCityName(offers: OfferPreviewInfo[]): Record<string, Offer
 
 function getFavoritesSections(
   offersByCityName: Record<string, OfferPreviewInfo[]>,
-  onBookmarkClick: (offerId: string) => void
+  handleBookmarkClick: (offerId: string) => void
 ): ReactNode[] {
   const sections: ReactNode[] = [];
   for (const [cityName, cityOffers] of Object.entries(offersByCityName)) {
@@ -29,7 +30,7 @@ function getFavoritesSections(
         key={cityName}
         city={cityName}
         offers={cityOffers}
-        onBookmarkClick={onBookmarkClick}
+        onBookmarkClick={handleBookmarkClick}
       />
     );
   }
@@ -37,13 +38,13 @@ function getFavoritesSections(
 }
 
 export function FavoritesPage(): ReactNode {
-  const favoriteOffers = useAppSelector((state) => state.offers.favoriteOffers);
+  const favoriteOffers = useAppSelector(getFavoriteOffers);
   const dispatch = useAppDispatch();
-  const offersByCity = groupOffersByCityName(favoriteOffers);
-  const onBookmarkClick = (offerId: string) => {
+  const handleBookmarkClick = (offerId: string) => {
     dispatch(setFavoriteStatus({ offerId, status: FavoriteAction.Remove }));
   };
-  const sections = getFavoritesSections(offersByCity, onBookmarkClick);
+  const offersByCity = groupOffersByCityName(favoriteOffers);
+  const sections = getFavoritesSections(offersByCity, handleBookmarkClick);
   const isEmpty = favoriteOffers.length === 0;
   return (
     <div className="page">

@@ -13,6 +13,7 @@ import { AppRoute } from '../../enums/app-route.ts';
 import { SortingType } from '../../enums/sorting-type.ts';
 import { makeCity, makeComment, makeOfferFullInfo, makeOfferPreviewInfo } from '../../utils/mocks.ts';
 import { ServerErrorType } from '../../enums/server-error-type.ts';
+import { CITIES } from '../../const.ts';
 import type { State } from '../../types/state.ts';
 
 function withMemoryHistory(component: ReactNode, initialEntries: string[] = [AppRoute.Main]): ReactNode {
@@ -41,8 +42,8 @@ function makeState(initial?: Partial<State>): State {
       isOffersLoading: false
     },
     cities: {
-      city: null,
-      cities: []
+      city: CITIES[0],
+      cities: CITIES
     },
     error: null,
     ...initial
@@ -226,5 +227,30 @@ describe('Application routing', () => {
 
     expect(screen.getByText(StatusCodes.INTERNAL_SERVER_ERROR)).toBeInTheDocument();
     expect(screen.getByText(errorMessage)).toBeInTheDocument();
+  });
+
+  it('should render "Error Page" with 500 status when getOffers fails with 500', () => {
+    const defaultState = makeState();
+    const store = mockStoreCreator({
+      ...defaultState,
+      error: {
+        status: StatusCodes.INTERNAL_SERVER_ERROR,
+        message: 'Internal Server Error',
+        errorType: ServerErrorType.CommonError
+      },
+      offers: {
+        ...defaultState.offers,
+        isOffersLoading: false
+      }
+    });
+
+    render(
+      <Provider store={store}>
+        {withMemoryHistory(<App />)}
+      </Provider>
+    );
+
+    expect(screen.getByText('500')).toBeInTheDocument();
+    expect(screen.getByText('Internal Server Error')).toBeInTheDocument();
   });
 });

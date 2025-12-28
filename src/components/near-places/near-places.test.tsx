@@ -13,8 +13,6 @@ describe('Component: NearPlaces', () => {
       <MemoryRouter>
         <NearPlaces
           offers={offers}
-          onOfferCardHover={() => {}}
-          onOfferCardUnhover={() => {}}
           onBookmarkClick={() => {}}
         />
       </MemoryRouter>

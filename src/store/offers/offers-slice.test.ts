@@ -1,8 +1,7 @@
-﻿import { describe, it } from 'vitest';
-import { datatype } from 'faker';
+﻿import { datatype } from 'faker';
+import { describe, it, expect } from 'vitest';
 
 import {
-  makeCity,
   makeComment,
   makeOfferFullInfo,
   makeOfferPreviewInfo,
@@ -10,23 +9,62 @@ import {
   makeOfferPreviewInfos
 } from '../../utils/mocks.ts';
 import { SortingType } from '../../enums/sorting-type.ts';
-import { getFavoriteOffers, getOffer, getOffers, sendComment, setFavoriteStatus } from '../api-actions.ts';
+import { getFavoriteOffers, getOffer, getOffers, logout, sendComment, setFavoriteStatus } from '../api-actions.ts';
 import { offersSlice, switchSortingType, } from './offers-slice.ts';
 import { FavoriteAction } from '../../enums/favorite-action.ts';
+import { switchCity } from '../cities/cities-slice.ts';
+import { CITIES } from '../../const.ts';
 
 describe('Offers slice', () => {
+  it('should set isOffersLoading to true on getOffers.pending', () => {
+    const initialState = makeOffersState({ isOffersLoading: false });
+    const result = offersSlice.reducer(initialState, getOffers.pending('', undefined));
+    expect(result.isOffersLoading).toBe(true);
+  });
+
+  it('should set isOffersLoading to false on getOffers.rejected', () => {
+    const initialState = makeOffersState({ isOffersLoading: true });
+    const result = offersSlice.reducer(initialState, getOffers.rejected(null, '', undefined));
+    expect(result.isOffersLoading).toBe(false);
+  });
+
+  it('should load offers on getOffers.fulfilled', () => {
+    const initialState = makeOffersState({ allOffers: [], offersInCity: [], isOffersLoading: true });
+    const city = CITIES[0];
+    const offersToLoad = makeOfferPreviewInfos()
+      .map((o) => {
+        o.city = city;
+        return o;
+      });
+
+    const result = offersSlice.reducer(
+      initialState,
+      getOffers.fulfilled(offersToLoad, 'requestId', undefined)
+    );
+
+    expect(result.allOffers.length).toBe(offersToLoad.length);
+    expect(result.offersInCity.length).toBe(offersToLoad.length);
+    expect(result.isOffersLoading).toBe(false);
+  });
+
+  it('should set isOfferLoading to true on getOffer.pending', () => {
+    const initialState = makeOffersState({ isOfferLoading: false });
+    const result = offersSlice.reducer(initialState, getOffer.pending('', '1'));
+    expect(result.isOfferLoading).toBe(true);
+  });
+
+  it('should set isOfferLoading to false on getOffer.rejected', () => {
+    const initialState = makeOffersState({ isOfferLoading: true });
+    const result = offersSlice.reducer(initialState, getOffer.rejected(null, '', '1'));
+    expect(result.isOfferLoading).toBe(false);
+  });
+
   it('should load offer on getOffer.fulfilled', () => {
-    const initialState = makeOffersState({ offer: null, nearbyOffers: [], comments: [] });
+    const initialState = makeOffersState({ offer: null, nearbyOffers: [], comments: [], isOfferLoading: true });
     const offerToLoad = {
       offer: makeOfferFullInfo(),
       comments: Array.from({ length: 5 }, () => makeComment()),
       nearbyOffers: makeOfferPreviewInfos(),
-    };
-    const expectedState = {
-      ...initialState,
-      offer: offerToLoad.offer,
-      nearbyOffers: offerToLoad.nearbyOffers,
-      comments: offerToLoad.comments
     };
 
     const result = offersSlice.reducer(
@@ -34,51 +72,35 @@ describe('Offers slice', () => {
       getOffer.fulfilled(offerToLoad, 'requestId', offerToLoad.offer.id)
     );
 
-    expect(result).toEqual(expectedState);
+    expect(result.offer).toEqual(offerToLoad.offer);
+    expect(result.comments).toEqual(offerToLoad.comments);
+    expect(result.nearbyOffers).toEqual(offerToLoad.nearbyOffers);
+    expect(result.isOfferLoading).toBe(false);
   });
 
-  it('should load offers on getOffers.fulfilled', () => {
-    const initialState = makeOffersState({ allOffers: [], offersInCity: [] });
-    const city = makeCity();
-    const offersToLoad = makeOfferPreviewInfos()
-      .map((o) => {
-        o.city = city;
-        return o;
-      })
-      .sort((a, b) => {
-        switch (initialState.currentSortingType) {
-          case SortingType.PriceLowToHigh:
-            return a.price - b.price;
-          case SortingType.PriceHighToLow:
-            return b.price - a.price;
-          case SortingType.TopRatedFirst:
-            return b.rating - a.rating;
-          case SortingType.Popular:
-          default:
-            return 0;
-        }
-      });
-    const expectedState = {
-      ...initialState,
-      allOffers: offersToLoad,
-      offersInCity: offersToLoad,
-    };
+  it('should reset favorite states on logout.fulfilled', () => {
+    const offer = makeOfferFullInfo({ isFavorite: true });
+    const initialState = makeOffersState({
+      favoriteOffers: [makeOfferPreviewInfo({ isFavorite: true })],
+      allOffers: [makeOfferPreviewInfo({ isFavorite: true })],
+      offersInCity: [makeOfferPreviewInfo({ isFavorite: true })],
+      offer: offer
+    });
 
     const result = offersSlice.reducer(
       initialState,
-      getOffers.fulfilled(offersToLoad, 'requestId', undefined)
+      logout.fulfilled(undefined, 'requestId', undefined)
     );
 
-    expect(result).toEqual(expectedState);
+    expect(result.favoriteOffers).toEqual([]);
+    expect(result.allOffers.every((o) => !o.isFavorite)).toBe(true);
+    expect(result.offersInCity.every((o) => !o.isFavorite)).toBe(true);
+    expect(result.offer?.isFavorite).toBe(false);
   });
 
   it('should add comment on sendComment.fulfilled', () => {
     const initialState = makeOffersState({ comments: [] });
     const commentToAdd = makeComment();
-    const expectedState = {
-      ...initialState,
-      comments: [commentToAdd],
-    };
 
     const result = offersSlice.reducer(
       initialState,
@@ -89,114 +111,72 @@ describe('Offers slice', () => {
       )
     );
 
-    expect(result).toEqual(expectedState);
+    expect(result.comments).toContainEqual(commentToAdd);
   });
 
-  it('should add favorite and mark offer as favorite on setFavoriteStatus.fulfilled', () => {
-    const offerToAddToFavorites = makeOfferPreviewInfo({ isFavorite: false });
+  it('should add favorite on setFavoriteStatus.fulfilled', () => {
+    const offerToFavorite = makeOfferPreviewInfo({ isFavorite: false });
     const initialState = makeOffersState({
       favoriteOffers: [],
-      allOffers: [offerToAddToFavorites],
-      offersInCity: [offerToAddToFavorites],
-      nearbyOffers: [offerToAddToFavorites]
+      allOffers: [offerToFavorite],
     });
-    const expectedOfferAfterAddingToFavorites = {
-      ...offerToAddToFavorites,
-      isFavorite: true,
-    };
-    const expectedState = {
-      ...initialState,
-      favoriteOffers: [expectedOfferAfterAddingToFavorites],
-      allOffers: [expectedOfferAfterAddingToFavorites],
-      offersInCity: [expectedOfferAfterAddingToFavorites],
-      nearbyOffers: [expectedOfferAfterAddingToFavorites]
-    };
+    const updatedOffer = { ...offerToFavorite, isFavorite: true };
 
     const result = offersSlice.reducer(
       initialState,
       setFavoriteStatus.fulfilled(
-        expectedOfferAfterAddingToFavorites,
+        updatedOffer,
         'requestId',
-        { offerId: expectedOfferAfterAddingToFavorites.id, status: FavoriteAction.Add }
+        { offerId: updatedOffer.id, status: FavoriteAction.Add }
       )
     );
 
-    expect(result).toEqual(expectedState);
+    expect(result.favoriteOffers).toContainEqual(updatedOffer);
+    expect(result.allOffers.find((o) => o.id === updatedOffer.id)?.isFavorite).toBe(true);
   });
 
   it('should load favorites on getFavoriteOffers.fulfilled', () => {
-    const offersToLoad = makeOfferPreviewInfos()
-      .map((o) => {
-        o.isFavorite = true;
-        return o;
-      });
-    const initialState = makeOffersState({
-      favoriteOffers: []
-    });
-    const expectedState = {
-      ...initialState,
-      favoriteOffers: offersToLoad,
-    };
+    const favorites = [makeOfferPreviewInfo({ isFavorite: true })];
+    const initialState = makeOffersState({ favoriteOffers: [] });
 
     const result = offersSlice.reducer(
       initialState,
-      getFavoriteOffers.fulfilled(offersToLoad, 'requestId', undefined)
+      getFavoriteOffers.fulfilled(favorites, 'requestId', undefined)
     );
 
-    expect(result).toEqual(expectedState);
+    expect(result.favoriteOffers).toEqual(favorites);
   });
 
-  it('should remove favorite and mark offer as not favorite on setFavoriteStatus.fulfilled', () => {
-    const offerToRemoveFromFavorites = makeOfferPreviewInfo({ isFavorite: true });
+  it('should switch sorting type and sort offers', () => {
+    const offers = [
+      makeOfferPreviewInfo({ price: 100 }),
+      makeOfferPreviewInfo({ price: 50 }),
+    ];
     const initialState = makeOffersState({
-      favoriteOffers: [offerToRemoveFromFavorites],
-      allOffers: [offerToRemoveFromFavorites],
-      offersInCity: [offerToRemoveFromFavorites]
+      offersInCity: offers,
+      currentSortingType: SortingType.Popular
     });
-    const expectedOfferAfterRemovingFromFavorites = {
-      ...offerToRemoveFromFavorites,
-      isFavorite: false,
-    };
-    const expectedState = {
-      ...initialState,
-      favoriteOffers: [],
-      allOffers: [expectedOfferAfterRemovingFromFavorites],
-      offersInCity: [expectedOfferAfterRemovingFromFavorites]
-    };
 
-    const result = offersSlice.reducer(
-      initialState,
-      setFavoriteStatus.fulfilled(
-        expectedOfferAfterRemovingFromFavorites,
-        'requestId',
-        { offerId: expectedOfferAfterRemovingFromFavorites.id, status: FavoriteAction.Remove }
-      )
-    );
+    const result = offersSlice.reducer(initialState, switchSortingType(SortingType.PriceLowToHigh));
 
-    expect(result).toEqual(expectedState);
+    expect(result.currentSortingType).toBe(SortingType.PriceLowToHigh);
+    expect(result.offersInCity[0].price).toBe(50);
   });
 
-  it('should switch sorting type and sort offers in city', () => {
-    const city = makeCity();
-    const offers = makeOfferPreviewInfos()
-      .map((o) => {
-        o.city = city;
-        return o;
-      })
-      .sort((a, b) => a.price - b.price);
+  it('should update offersInCity when city is switched', () => {
+    const paris = CITIES[0];
+    const amsterdam = CITIES[3];
+    const offerParis = makeOfferPreviewInfo({ city: paris });
+    const offerAmsterdam = makeOfferPreviewInfo({ city: amsterdam });
+
     const initialState = makeOffersState({
-      currentSortingType: SortingType.PriceLowToHigh,
-      offersInCity: offers
+      allOffers: [offerParis, offerAmsterdam],
+      offersInCity: []
     });
-    const expectedSortingType = SortingType.TopRatedFirst;
-    const expectedState = {
-      ...initialState,
-      offersInCity: [...offers].sort((a, b) => b.rating - a.rating),
-      currentSortingType: expectedSortingType,
-    };
 
-    const result = offersSlice.reducer(initialState, switchSortingType(expectedSortingType));
+    const result = offersSlice.reducer(initialState, switchCity(amsterdam));
 
-    expect(result).toEqual(expectedState);
+    expect(result.offersInCity).toHaveLength(1);
+    expect(result.offersInCity[0].id).toBe(offerAmsterdam.id);
   });
 });

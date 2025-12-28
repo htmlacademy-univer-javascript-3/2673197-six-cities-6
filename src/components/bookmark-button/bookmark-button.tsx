@@ -19,9 +19,7 @@ export function BookmarkButton(
         { [`${blockClassName}__bookmark-button--active`]: active }
       )}
       type="button"
-      onClick={() => {
-        onClick();
-      }}
+      onClick={onClick}
     >
       <svg className={`${blockClassName}__bookmark-icon`} width={width} height={height}>
         <use xlinkHref="#icon-bookmark"></use>

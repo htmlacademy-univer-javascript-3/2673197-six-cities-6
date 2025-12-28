@@ -5,12 +5,10 @@ import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 
 type NearPlacesProps = {
   offers: OfferPreviewInfo[];
-  onOfferCardHover: (id: string) => void;
-  onOfferCardUnhover: () => void;
   onBookmarkClick: (id: string) => void;
 }
 
-export function NearPlaces({ offers, onOfferCardHover, onOfferCardUnhover, onBookmarkClick }: NearPlacesProps): ReactNode {
+export function NearPlaces({ offers, onBookmarkClick }: NearPlacesProps): ReactNode {
   return (
     <div className="container">
       <section className="near-places places">
@@ -20,8 +18,6 @@ export function NearPlaces({ offers, onOfferCardHover, onOfferCardUnhover, onBoo
         <div className="near-places__list places__list">
           <OffersList
             offers={offers}
-            onOfferCardHover={onOfferCardHover}
-            onOfferCardUnhover={onOfferCardUnhover}
             onBookmarkClick={onBookmarkClick}
           />
         </div>

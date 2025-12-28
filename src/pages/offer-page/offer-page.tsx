@@ -1,6 +1,6 @@
-﻿import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { ReactNode } from 'react';
 
 import { Map } from '../../components/map/map.tsx';
 import { PremiumLabel } from '../../components/premium-label/premium-label.tsx';
@@ -13,7 +13,7 @@ import { AuthStatus } from '../../enums/auth-status.ts';
 import { AppRoute } from '../../enums/app-route.ts';
 import { BookmarkButton } from '../../components/bookmark-button/bookmark-button.tsx';
 import { Header } from '../../components/header/header.tsx';
-import { setFavoriteStatus, getOffer } from '../../store/api-actions.ts';
+import { setFavoriteStatus, getOffer as getOfferAction } from '../../store/api-actions.ts';
 import { FavoriteAction } from '../../enums/favorite-action.ts';
 import { RatingStars } from '../../components/rating-stars/rating-stars.tsx';
 import { OfferGallery } from '../../components/offer-gallery/offer-gallery.tsx';
@@ -22,8 +22,13 @@ import { OfferInside } from '../../components/offer-inside/offer-inside.tsx';
 import { OfferHost } from '../../components/offer-host/offer-host.tsx';
 import { OfferReviews } from '../../components/offer-reviews/offer-reviews.tsx';
 import { NearPlaces } from '../../components/near-places/near-places.tsx';
+import { getAuthStatus } from '../../store/user/user-selectors.ts';
+import { getError } from '../../store/error/error-selectors.ts';
+import { getComments, getNearbyOffers, getOffer, isOfferLoading as getIsOfferLoading } from '../../store/offers/offers-selectors.ts';
 import type { Point } from '../../types/point.ts';
 import type { Location } from '../../types/location.ts';
+
+const MAX_NEAR_OFFERS_COUNT = 3;
 
 function mapToPoint(data: { location: Location; id: string }): Point {
   return ({
@@ -39,36 +44,28 @@ export function OfferPage(): ReactNode {
 
   const { id } = useParams<{ id: string }>() as { id: string };
 
-  const offer = useAppSelector((state) => state.offers.offer);
-  const comments = useAppSelector((state) => state.offers.comments);
-  const nearbyOffers = useAppSelector((state) => state.offers.nearbyOffers);
-  const isOfferLoading = useAppSelector((state) => state.offers.isOfferLoading);
-  const error = useAppSelector((state) => state.error);
-  const user = useAppSelector((state) => state.user);
-
-  const [hoveredOfferId, setHoveredOfferId] = useState<string | null>(null);
+  const offer = useAppSelector(getOffer);
+  const comments = useAppSelector(getComments);
+  const nearbyOffers = useAppSelector(getNearbyOffers);
+  const isOfferLoading = useAppSelector(getIsOfferLoading);
+  const error = useAppSelector(getError);
+  const authStatus = useAppSelector(getAuthStatus);
 
   useEffect(() => {
-    dispatch(getOffer(id));
+    dispatch(getOfferAction(id));
   }, [id, dispatch]);
 
+  const nearbyOffersToDisplay = useMemo(() => nearbyOffers.slice(0, MAX_NEAR_OFFERS_COUNT), [nearbyOffers]);
+
   const mapPoints = useMemo(() => {
-    const points = nearbyOffers.map(mapToPoint);
+    const points = nearbyOffersToDisplay.map(mapToPoint);
     if (offer) {
       points.push(mapToPoint(offer));
     }
     return points;
-  }, [nearbyOffers, offer]);
+  }, [nearbyOffersToDisplay, offer]);
 
-  const selectedPoint = useMemo(() => {
-    if (hoveredOfferId) {
-      const hovered = nearbyOffers.find((o) => o.id === hoveredOfferId);
-      if (hovered) {
-        return mapToPoint(hovered);
-      }
-    }
-    return offer ? mapToPoint(offer) : null;
-  }, [hoveredOfferId, nearbyOffers, offer]);
+  const selectedPoint = useMemo(() => (offer ? mapToPoint(offer) : null), [offer]);
 
   if (error && error.errorType === ServerErrorType.CommonError) {
     return <ErrorPage />;
@@ -82,8 +79,8 @@ export function OfferPage(): ReactNode {
     return <ErrorPage />;
   }
 
-  const onBookmarkClick = (offerId: string) => {
-    if (user.authStatus !== AuthStatus.Authorized) {
+  const handleBookmarkClick = (offerId: string) => {
+    if (authStatus !== AuthStatus.Authorized) {
       navigate(AppRoute.Login);
       return;
     }
@@ -120,7 +117,7 @@ export function OfferPage(): ReactNode {
                 </h1>
                 <BookmarkButton
                   active={offer.isFavorite ?? false}
-                  onClick={() => onBookmarkClick(offer.id)}
+                  onClick={() => handleBookmarkClick(offer.id)}
                   blockClassName='offer'
                   width={31}
                   height={33}
@@ -154,10 +151,8 @@ export function OfferPage(): ReactNode {
           </section>
         </section>
         <NearPlaces
-          offers={nearbyOffers}
-          onOfferCardHover={setHoveredOfferId}
-          onOfferCardUnhover={() => setHoveredOfferId(null)}
-          onBookmarkClick={onBookmarkClick}
+          offers={nearbyOffersToDisplay}
+          onBookmarkClick={handleBookmarkClick}
         />
       </main>
     </div>

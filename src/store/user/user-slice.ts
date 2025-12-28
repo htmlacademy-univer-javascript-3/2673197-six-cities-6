@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { ActionNamespace } from '../../enums/action-namespace.ts';
 import { AuthStatus } from '../../enums/auth-status.ts';
-import { checkAuthStatus, login } from '../api-actions.ts';
+import { checkAuthStatus, login, logout } from '../api-actions.ts';
 import type { User } from '../../types/user.ts';
 
 const initialState: User = {
@@ -38,6 +38,10 @@ export const userSlice = createSlice<
             state.info = action.payload;
           })
           .addCase(login.rejected, (state) => {
+            state.authStatus = AuthStatus.Unauthorized;
+            state.info = null;
+          })
+          .addCase(logout.fulfilled, (state) => {
             state.authStatus = AuthStatus.Unauthorized;
             state.info = null;
           });

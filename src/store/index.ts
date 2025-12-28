@@ -1,11 +1,11 @@
 ﻿import { configureStore } from '@reduxjs/toolkit';
+import { HttpStatusCode, AxiosError } from 'axios';
 
 import { offersSlice } from './offers/offers-slice.ts';
 import { citiesSlice } from './cities/cities-slice.ts';
 import { changeUserInfo, userSlice } from './user/user-slice.ts';
 import { errorSlice } from './error/error-slice.ts';
 import { createApi } from '../services/api.ts';
-import { AxiosError, HttpStatusCode } from 'axios';
 import { AuthStatus } from '../enums/auth-status.ts';
 
 const api = createApi();

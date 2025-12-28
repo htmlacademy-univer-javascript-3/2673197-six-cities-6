@@ -3,6 +3,7 @@ import { Action } from 'redux';
 import thunk, { ThunkDispatch } from 'redux-thunk';
 import { datatype, internet, lorem } from 'faker';
 import MockAdapter from 'axios-mock-adapter';
+import { StatusCodes } from 'http-status-codes';
 
 import { createApi } from '../services/api.ts';
 import {
@@ -11,6 +12,7 @@ import {
   getOffer,
   getOffers,
   login,
+  logout,
   sendComment,
   setFavoriteStatus
 } from './api-actions.ts';
@@ -19,7 +21,6 @@ import { AuthStatus } from '../enums/auth-status.ts';
 import { FavoriteAction } from '../enums/favorite-action.ts';
 import type { State } from '../types/state.ts';
 import type { CommentContent } from '../types/comment-content.ts';
-import type { RatingScore } from '../types/rating-score.ts';
 
 const extractActionTypes = (actions: Action<string>[]) => actions.map((action) => action.type);
 
@@ -35,7 +36,7 @@ describe('Async actions', () => {
   let store: ReturnType<typeof mockStoreCreator>;
 
   beforeEach(() => {
-    store = mockStoreCreator({ user: { authStatus: AuthStatus.Unknown } });
+    store = mockStoreCreator({ user: { authStatus: AuthStatus.Unknown, info: null } });
   });
 
   describe('getOffers', () => {
@@ -49,6 +50,19 @@ describe('Async actions', () => {
       expect(actions).toEqual([
         getOffers.pending.type,
         getOffers.fulfilled.type,
+      ]);
+    });
+
+    it('should dispatch "getOffers.pending" and "getOffers.rejected" when server response 500', async () => {
+      mockAxiosAdapter.onGet(ApiRoute.Offers).reply(StatusCodes.INTERNAL_SERVER_ERROR);
+
+      await store.dispatch(getOffers());
+
+      const actions = extractActionTypes(store.getActions());
+
+      expect(actions).toEqual([
+        getOffers.pending.type,
+        getOffers.rejected.type,
       ]);
     });
   });
@@ -129,12 +143,27 @@ describe('Async actions', () => {
     });
   });
 
+  describe('logout', () => {
+    it('should dispatch "logout.pending" and "logout.fulfilled" when server response 204', async () => {
+      mockAxiosAdapter.onDelete(ApiRoute.Logout).reply(204);
+
+      await store.dispatch(logout());
+
+      const actions = extractActionTypes(store.getActions());
+
+      expect(actions).toEqual([
+        logout.pending.type,
+        logout.fulfilled.type,
+      ]);
+    });
+  });
+
   describe('sendComment', () => {
     it('should dispatch "sendComment.pending" and "sendComment.fulfilled" when server response 200', async () => {
       const offerId = datatype.uuid();
       const comment: CommentContent = {
         comment: lorem.sentence(),
-        rating: datatype.number({ min: 1, max: 5 }) as RatingScore
+        rating: datatype.number({ min: 1, max: 5 })
       };
       mockAxiosAdapter.onPost(`/comments/${offerId}`).reply(200, {});
 

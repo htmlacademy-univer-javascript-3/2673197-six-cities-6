@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 import { ActionNamespace } from '../../enums/action-namespace.ts';
-import { getFavoriteOffers, getOffer, login, sendComment, setFavoriteStatus } from '../api-actions.ts';
+import { getFavoriteOffers, getOffer, getOffers, login, sendComment, setFavoriteStatus } from '../api-actions.ts';
 import type { ServerError } from '../../types/server-error.ts';
 
 type ErrorState = ServerError | null;
@@ -19,6 +19,7 @@ export const errorSlice = createSlice<ErrorState, { resetError: () => void }, Ac
   extraReducers(builder) {
     builder
       .addCase(getOffer.rejected, (_state, action) => action.payload ?? null)
+      .addCase(getOffers.rejected, (_state, action) => action.payload ?? null)
       .addCase(sendComment.rejected, (_state, action) => action.payload ?? null)
       .addCase(login.rejected, (_state, action) => action.payload ?? null)
       .addCase(getFavoriteOffers.rejected, (_state, action) => action.payload ?? null)

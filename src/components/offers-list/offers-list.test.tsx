@@ -14,8 +14,6 @@ describe('Component: OffersList', () => {
       <MemoryRouter>
         <OffersList
           offers={offers}
-          onOfferCardHover={() => {}}
-          onOfferCardUnhover={() => {}}
           onBookmarkClick={() => {}}
         />
       </MemoryRouter>

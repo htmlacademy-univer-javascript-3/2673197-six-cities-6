@@ -5,9 +5,9 @@ import type { ReactNode } from 'react';
 
 import { AppRoute } from '../../enums/app-route.ts';
 import { PremiumLabel } from '../premium-label/premium-label.tsx';
-import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 import { BookmarkButton } from '../bookmark-button/bookmark-button.tsx';
 import { RatingStars } from '../rating-stars/rating-stars.tsx';
+import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 
 type HotelInfoProps = {
   offer: OfferPreviewInfo;
@@ -28,6 +28,19 @@ function HotelCardComponent({
   onMouseOver,
   onMouseLeave
 }: HotelInfoProps): ReactNode {
+  const handleBookmarkClick = () => {
+    onBookmarkClick(offer.id);
+  };
+  const handleMouseOver = () => {
+    if (onMouseOver) {
+      onMouseOver();
+    }
+  };
+  const handleMouseLeave = () => {
+    if (onMouseLeave) {
+      onMouseLeave();
+    }
+  };
   return (
     <article className={`${blockClassName}__card place-card`}>
       {offer.isPremium && <PremiumLabel />}
@@ -39,8 +52,8 @@ function HotelCardComponent({
             width={offerPreviewImageWidth}
             height={offerPreviewImageHeight}
             alt="Place image"
-            onMouseOver={onMouseOver}
-            onMouseLeave={onMouseLeave}
+            onMouseOver={handleMouseOver}
+            onMouseLeave={handleMouseLeave}
           />
         </Link>
       </div>
@@ -54,7 +67,7 @@ function HotelCardComponent({
             <b className="place-card__price-value">€{offer.price}</b>
             <span className="place-card__price-text">/&nbsp;night</span>
           </div>
-          <BookmarkButton active={offer.isFavorite ?? false} onClick={() => onBookmarkClick(offer.id)} />
+          <BookmarkButton active={offer.isFavorite ?? false} onClick={handleBookmarkClick} />
         </div>
         <RatingStars rating={offer.rating} />
         <h2 className="place-card__name">

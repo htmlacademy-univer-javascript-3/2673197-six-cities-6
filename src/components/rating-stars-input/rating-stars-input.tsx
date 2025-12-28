@@ -7,9 +7,10 @@ import type { RatingScore } from '../../types/rating-score.ts';
 type ScoreStarsProps = {
   value: RatingScore | null;
   onChange: (score: RatingScore) => void;
+  disabled?: boolean;
 }
 
-export function RatingStarsInput({ onChange, value }: ScoreStarsProps): ReactNode {
+export function RatingStarsInput({ onChange, value, disabled = false }: ScoreStarsProps): ReactNode {
   return (
     <div className="reviews__rating-form form__rating">
       {RATINGS.map(({rating, description}) => (
@@ -22,6 +23,7 @@ export function RatingStarsInput({ onChange, value }: ScoreStarsProps): ReactNod
             type="radio"
             checked={rating === value}
             onChange={() => onChange(rating)}
+            disabled={disabled}
           />
           <label
             htmlFor={`${rating}-stars`}

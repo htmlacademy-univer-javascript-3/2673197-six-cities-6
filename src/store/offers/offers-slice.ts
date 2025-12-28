@@ -3,7 +3,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { SortingType } from '../../enums/sorting-type.ts';
 import { ActionNamespace } from '../../enums/action-namespace.ts';
 import { switchCity } from '../cities/cities-slice.ts';
-import { getFavoriteOffers, getOffer, getOffers, sendComment, setFavoriteStatus } from '../api-actions.ts';
+import { getFavoriteOffers, getOffer, getOffers, logout, sendComment, setFavoriteStatus } from '../api-actions.ts';
+import { CITIES } from '../../const.ts';
 import type { OfferPreviewInfo } from '../../types/offer-preview-info.ts';
 import type { OfferFullInfo } from '../../types/offer-full-info.ts';
 import type { Comment } from '../../types/comment.ts';
@@ -51,6 +52,12 @@ function updateOfferInList(list: OfferPreviewInfo[], updatedOffer: OfferPreviewI
   return list.map((item) => item.id === updatedOffer.id ? { ...item, isFavorite: updatedOffer.isFavorite } : item);
 }
 
+function setFavoriteToFalse(offers: OfferPreviewInfo[]) {
+  offers.forEach((o) => {
+    o.isFavorite = false;
+  });
+}
+
 export const offersSlice = createSlice({
   name: ActionNamespace.Offers,
   initialState,
@@ -68,10 +75,10 @@ export const offersSlice = createSlice({
       .addCase(getOffers.fulfilled, (state, action) => {
         state.allOffers = sortOffers(action.payload, state.currentSortingType);
 
-        const firstCity = action.payload.length > 0 ? action.payload[0].city : null;
-        if (firstCity) {
+        const initialCity = CITIES[0];
+        if (initialCity) {
           state.offersInCity = sortOffers(
-            state.allOffers.filter((o) => o.city.name === firstCity.name),
+            state.allOffers.filter((o) => o.city.name === initialCity.name),
             state.currentSortingType
           );
         }
@@ -120,6 +127,14 @@ export const offersSlice = createSlice({
           state.allOffers.filter((o) => o.city.name === action.payload.name),
           state.currentSortingType
         );
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.favoriteOffers = [];
+        setFavoriteToFalse(state.allOffers);
+        setFavoriteToFalse(state.offersInCity);
+        if (state.offer) {
+          state.offer.isFavorite = false;
+        }
       });
   }
 });

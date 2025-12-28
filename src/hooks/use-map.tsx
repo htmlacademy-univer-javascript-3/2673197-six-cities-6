@@ -24,6 +24,8 @@ export function useMap(
   }, [map, city]);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (mapRef.current !== null && !isRenderedRef.current) {
       const instance = city
         ? new Map(mapRef.current, {
@@ -47,9 +49,15 @@ export function useMap(
         instance.addLayer(layer);
       }
 
-      setMap(instance);
-      isRenderedRef.current = true;
+      if (isMounted) {
+        setMap(instance);
+        isRenderedRef.current = true;
+      }
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [mapRef, city]);
 
   return map;

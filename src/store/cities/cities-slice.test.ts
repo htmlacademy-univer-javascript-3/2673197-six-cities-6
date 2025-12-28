@@ -1,27 +1,18 @@
 ﻿import { describe, it, expect } from 'vitest';
 
 import { citiesSlice, switchCity } from './cities-slice.ts';
-import { makeCity, makeOfferPreviewInfo } from '../../utils/mocks.ts';
-import { getOffers } from '../api-actions.ts';
+import { makeCity } from '../../utils/mocks.ts';
+import { CITIES } from '../../const.ts';
 
 describe('Cities slice', () => {
   const initialState = {
-    city: null,
-    cities: []
+    city: CITIES[0],
+    cities: CITIES
   };
 
-  it('should load cities on getOffers.fulfilled', () => {
-    const paris = makeCity({ name: 'Paris' });
-    const amsterdam = makeCity({ name: 'Amsterdam' });
-    const expectedCities = [paris, amsterdam];
-    const offers = [makeOfferPreviewInfo({ city: paris }), makeOfferPreviewInfo({ city: amsterdam })];
-
-    const result = citiesSlice.reducer(
-      initialState,
-      getOffers.fulfilled(offers, 'requestId', undefined)
-    );
-
-    expect(result.cities).toEqual(expectedCities);
+  it('should have initial state with fixed cities', () => {
+    const result = citiesSlice.reducer(undefined, { type: '' });
+    expect(result).toEqual(initialState);
   });
 
   it('should switch city', () => {

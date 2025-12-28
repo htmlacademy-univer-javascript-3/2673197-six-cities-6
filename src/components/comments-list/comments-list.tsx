@@ -1,6 +1,6 @@
 ﻿import type { ReactNode } from 'react';
 
-import { CommentComponent as CommentComponent } from '../comment-component/comment-component.tsx';
+import { CommentComponent } from '../comment-component/comment-component.tsx';
 import type { Comment } from '../../types/comment.ts';
 
 type ReviewsListProps = {

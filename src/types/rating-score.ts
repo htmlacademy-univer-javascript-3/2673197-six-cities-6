@@ -1,1 +1,1 @@
-﻿export type RatingScore = 1 | 2 | 3 | 4 | 5;
+﻿export type RatingScore = number;

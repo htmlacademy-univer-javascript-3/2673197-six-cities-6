@@ -1,6 +1,7 @@
 ﻿import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { StatusCodes } from 'http-status-codes';
+import { datatype } from 'faker';
 
 import { OfferPage } from './offer-page.tsx';
 import { withStore } from '../../utils/component-mocks.tsx';
@@ -49,10 +50,14 @@ describe('Component: OfferPage', () => {
     expect(screen.getByText('404')).toBeInTheDocument();
   });
 
-  it('should render offer content when loaded', () => {
+  it('should render offer content and strictly 3 nearby offers when loaded', () => {
     const offer = makeOfferFullInfo();
-    const nearbyOffers = [makeOfferPreviewInfo()];
+    const nearbyOffers = Array.from(
+      { length: datatype.number({ min: 5, max: 10 }) },
+      () => makeOfferPreviewInfo()
+    );
     const comments = [makeComment()];
+    const MAX_NEAR_OFFERS_COUNT = 3;
 
     const { withStoreComponent } = withStore(
       <MemoryRouter initialEntries={[`/offer/${offer.id}`]}>
@@ -78,5 +83,8 @@ describe('Component: OfferPage', () => {
     expect(screen.getByText(/Meet the host/i)).toBeInTheDocument();
     expect(screen.getByText(/Other places in the neighbourhood/i)).toBeInTheDocument();
     expect(screen.getByTestId('map')).toBeInTheDocument();
+
+    const displayedNearbyOffers = screen.getAllByRole('article');
+    expect(displayedNearbyOffers.length).toBe(MAX_NEAR_OFFERS_COUNT);
   });
 });

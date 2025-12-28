@@ -19,6 +19,35 @@ describe('Component: OfferReviews', () => {
     expect(screen.getAllByTestId('comment-item')).toHaveLength(comments.length);
   });
 
+  it('should render maximum 10 comments', () => {
+    const comments = Array.from({ length: 15 }, () => makeComment());
+    const expectedCount = 10;
+    const { withStoreComponent } = withStore(
+      <OfferReviews comments={comments} />,
+      makeStore()
+    );
+
+    render(withStoreComponent);
+
+    expect(screen.getAllByTestId('comment-item')).toHaveLength(expectedCount);
+  });
+
+  it('should render comments sorted from newest to oldest', () => {
+    const oldComment = makeComment({ date: '2023-01-01T00:00:00.000Z', comment: 'Old one' });
+    const newComment = makeComment({ date: '2023-12-31T00:00:00.000Z', comment: 'New one' });
+    const comments = [oldComment, newComment];
+    const { withStoreComponent } = withStore(
+      <OfferReviews comments={comments} />,
+      makeStore()
+    );
+
+    render(withStoreComponent);
+
+    const commentElements = screen.getAllByTestId('comment-item');
+    expect(commentElements[0]).toHaveTextContent('New one');
+    expect(commentElements[1]).toHaveTextContent('Old one');
+  });
+
   it('should render comment form if user is authorized', () => {
     const { withStoreComponent } = withStore(
       <OfferReviews comments={[]} />,

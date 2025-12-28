@@ -1,6 +1,7 @@
 ﻿import type { ReactNode } from 'react';
-import type { Comment } from '../../types/comment.ts';
+
 import { RatingStars } from '../rating-stars/rating-stars.tsx';
+import type { Comment } from '../../types/comment.ts';
 
 type CommentProps = {
   comment: Comment;
